@@ -1,6 +1,13 @@
-import { AnalyticsRecord, GameID, GameRecord } from "../core/Schemas";
 import { S3 } from "@aws-sdk/client-s3";
+import z from "zod";
 import { getServerConfigFromServer } from "../core/configuration/ConfigLoader";
+import {
+  AnalyticsRecord,
+  GameID,
+  GameRecord,
+  RedactedGameRecord,
+  RedactedGameRecordSchema,
+} from "../core/Schemas";
 import { logger } from "./Logger";
 import { replacer } from "../core/Util";
 
@@ -35,7 +42,7 @@ export async function archive(gameRecord: GameRecord) {
       log.info(
         `${gameRecord.info.gameID}: game has more than zero turns, attempting to write to full game to R2`,
       );
-      await archiveFullGameToR2(stripPerisistentIds(gameRecord));
+      await archiveFullGameToR2(stripPersistentIds(gameRecord));
     }
   } catch (error: unknown) {
     // If the error is not an instance of Error, log it as a string
@@ -69,7 +76,7 @@ function stripTurns(gameRecord: GameRecord): AnalyticsRecord {
   return analyticsData;
 }
 
-function stripPerisistentIds(gameRecord: GameRecord): GameRecord {
+function stripPersistentIds(gameRecord: GameRecord): RedactedGameRecord {
   // Create replay object
   const {
     info: {
@@ -96,7 +103,7 @@ function stripPerisistentIds(gameRecord: GameRecord): GameRecord {
       flag,
     }),
   );
-  const replayData: GameRecord = {
+  const replayData: RedactedGameRecord = {
     info: { gameID, config, players, start, end, duration, num_turns, winner },
     version,
     gitCommit,
@@ -141,7 +148,7 @@ async function archiveAnalyticsToR2(gameRecord: AnalyticsRecord) {
   }
 }
 
-async function archiveFullGameToR2(gameRecord: GameRecord) {
+async function archiveFullGameToR2(gameRecord: RedactedGameRecord) {
   try {
     await r2.putObject({
       Bucket: bucket,
@@ -159,7 +166,7 @@ async function archiveFullGameToR2(gameRecord: GameRecord) {
 
 export async function readGameRecord(
   gameId: GameID,
-): Promise<GameRecord | null> {
+): Promise<RedactedGameRecord | null> {
   try {
     // Check if file exists and download in one operation
     const response = await r2.getObject({
@@ -173,7 +180,7 @@ export async function readGameRecord(
     }
 
     const bodyContents = await response.Body.transformToString();
-    return JSON.parse(bodyContents) as GameRecord;
+    return validateRecord(JSON.parse(bodyContents), gameId);
   } catch (error: unknown) {
     // If the error is not an instance of Error, log it as a string
     if (!(error instanceof Error)) {
@@ -196,7 +203,7 @@ export async function readGameRecord(
 
 export async function readGameRecordFallback(
   gameId: GameID,
-): Promise<GameRecord | null> {
+): Promise<RedactedGameRecord | null> {
   try {
     const response = await fetch(config.replayFallbackUrl(gameId), {
       headers: {
@@ -217,7 +224,7 @@ export async function readGameRecordFallback(
       );
     }
 
-    return await response.json();
+    return validateRecord(await response.json(), gameId);
   } catch (error: unknown) {
     // If the error is not an instance of Error, log it as a string
     if (!(error instanceof Error)) {
@@ -238,6 +245,21 @@ export async function readGameRecordFallback(
     // Return null instead of throwing the error
     return null;
   }
+}
+
+function validateRecord(
+  json: unknown,
+  gameId: GameID,
+): RedactedGameRecord | null {
+  const parsed = RedactedGameRecordSchema.safeParse(json);
+
+  if (!parsed.success) {
+    const error = z.prettifyError(parsed.error);
+    log.error(`${gameId}: Error parsing game record: ${error}`);
+    return null;
+  }
+
+  return parsed.data;
 }
 
 export async function gameRecordExists(gameId: GameID): Promise<boolean> {
