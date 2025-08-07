@@ -42,6 +42,10 @@ export class DevServerConfig extends DefaultServerConfig {
   subdomain(): string {
     return "";
   }
+
+  replayFallbackUrl(gameId: GameID): string {
+    return `https://api.openfront.io/game/${gameId}`;
+  }
 }
 
 export class DevConfig extends DefaultConfig {
