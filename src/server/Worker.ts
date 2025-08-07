@@ -10,6 +10,7 @@ import { archive, readGameRecord } from "./Archive";
 import express, { NextFunction, Request, Response } from "express";
 import { GameEnv } from "../core/configuration/Config";
 import { GameManager } from "./GameManager";
+import { replacer } from "../core/Util";
 import { GameType } from "../core/game/Game";
 import { ID } from "../core/BaseSchemas";
 import { PrivilegeRefresher } from "./PrivilegeRefresher";
@@ -265,11 +266,19 @@ export async function startWorker() {
         });
       }
 
-      return res.status(200).json({
-        exists: true,
-        gameRecord,
-        success: true,
-      });
+      return res
+        .status(200)
+        .header("Content-Type", "application/json")
+        .send(
+          JSON.stringify(
+            {
+              success: true,
+              exists: true,
+              gameRecord: gameRecord,
+            },
+            replacer,
+          ),
+        );
     }),
   );
 
