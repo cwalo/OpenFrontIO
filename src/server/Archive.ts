@@ -139,13 +139,13 @@ export async function readGameRecord(
   } catch (error: unknown) {
     // If the error is not an instance of Error, log it as a string
     if (!(error instanceof Error)) {
-      log.error(
+      log.info(
         `${gameId}: Error reading game record from R2. Non-Error type: ${String(error)}`,
       );
     } else {
       const { message, stack, name } = error;
       // Log the error for monitoring purposes
-      log.error(`${gameId}: Error reading game record from R2: ${error}`, {
+      log.info(`${gameId}: Error reading game record from R2: ${error}`, {
         message: message,
         stack: stack,
         name: name,
@@ -183,7 +183,7 @@ export async function readGameRecordFallback(
   } catch (error: unknown) {
     // If the error is not an instance of Error, log it as a string
     if (!(error instanceof Error)) {
-      log.error(
+      log.info(
         `${gameId}: Error reading game record from public api. Non-Error type: ${String(error)}`,
       );
       return null;
