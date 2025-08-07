@@ -79,6 +79,7 @@ export async function startWorker() {
   });
 
   app.set("trust proxy", 3);
+  app.set("json replacer", replacer); // BigInt serialization
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "../../out")));
   app.use(
@@ -266,19 +267,11 @@ export async function startWorker() {
         });
       }
 
-      return res
-        .status(200)
-        .header("Content-Type", "application/json")
-        .send(
-          JSON.stringify(
-            {
-              success: true,
-              exists: true,
-              gameRecord: gameRecord,
-            },
-            replacer,
-          ),
-        );
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        gameRecord: gameRecord,
+      });
     }),
   );
 
