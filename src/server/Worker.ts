@@ -243,7 +243,6 @@ export async function startWorker() {
 
       if (typeof gameRecord === "string") {
         return res.status(404).json({
-          success: false,
           error: gameRecord,
           exists: false,
           success: false,
