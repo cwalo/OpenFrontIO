@@ -241,9 +241,10 @@ export async function startWorker() {
     gatekeeper.httpHandler(LimiterType.Get, async (req, res) => {
       const gameRecord = await readGameRecord(req.params.id);
 
-      if (!gameRecord) {
+      if (typeof gameRecord === "string") {
         return res.status(404).json({
-          error: "Game not found",
+          success: false,
+          error: gameRecord,
           exists: false,
           success: false,
         });

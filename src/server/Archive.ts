@@ -166,7 +166,7 @@ async function archiveFullGameToR2(gameRecord: RedactedGameRecord) {
 
 export async function readGameRecord(
   gameId: GameID,
-): Promise<RedactedGameRecord | null> {
+): Promise<RedactedGameRecord | string> {
   try {
     // Check if file exists and download in one operation
     const response = await r2.getObject({
@@ -203,7 +203,7 @@ export async function readGameRecord(
 
 export async function readGameRecordFallback(
   gameId: GameID,
-): Promise<RedactedGameRecord | null> {
+): Promise<RedactedGameRecord | string> {
   try {
     const response = await fetch(config.replayFallbackUrl(gameId), {
       headers: {
@@ -212,6 +212,10 @@ export async function readGameRecordFallback(
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return "Game not found";
+      }
+
       throw new Error(
         `Http error: non-successful http status ${response.status}`,
       );
@@ -231,7 +235,17 @@ export async function readGameRecordFallback(
       log.info(
         `${gameId}: Error reading game record from public api. Non-Error type: ${String(error)}`,
       );
-      return null;
+    } else {
+      const { message, stack, name } = error;
+      log.info(
+        `${gameId}: Error reading game record from public api: ${error}`,
+        {
+          message: message,
+          stack: stack,
+          name: name,
+          ...(error && typeof error === "object" ? error : {}),
+        },
+      );
     }
     const { message, stack, name } = error;
     // Log the error for monitoring purposes
@@ -250,13 +264,13 @@ export async function readGameRecordFallback(
 function validateRecord(
   json: unknown,
   gameId: GameID,
-): RedactedGameRecord | null {
+): RedactedGameRecord | string {
   const parsed = RedactedGameRecordSchema.safeParse(json);
 
   if (!parsed.success) {
     const error = z.prettifyError(parsed.error);
     log.error(`${gameId}: Error parsing game record: ${error}`);
-    return null;
+    return "Failed to parse record data";
   }
 
   return parsed.data;
