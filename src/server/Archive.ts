@@ -209,6 +209,7 @@ export async function readGameRecordFallback(
       headers: {
         Accept: "application/json",
       },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
