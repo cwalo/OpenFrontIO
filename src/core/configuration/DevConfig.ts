@@ -1,7 +1,7 @@
 import { DefaultConfig, DefaultServerConfig } from "./DefaultConfig";
+import { GameConfig, GameID } from "../Schemas";
 import { GameEnv, ServerConfig } from "./Config";
 import { UnitInfo, UnitType } from "../game/Game";
-import { GameConfig } from "../Schemas";
 import { UserSettings } from "../game/UserSettings";
 
 export class DevServerConfig extends DefaultServerConfig {

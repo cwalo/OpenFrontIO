@@ -1,6 +1,3 @@
-import { S3 } from "@aws-sdk/client-s3";
-import { z } from "zod";
-import { getServerConfigFromServer } from "../core/configuration/ConfigLoader";
 import {
   AnalyticsRecord,
   GameID,
@@ -8,8 +5,11 @@ import {
   RedactedGameRecord,
   RedactedGameRecordSchema,
 } from "../core/Schemas";
+import { S3 } from "@aws-sdk/client-s3";
+import { getServerConfigFromServer } from "../core/configuration/ConfigLoader";
 import { logger } from "./Logger";
 import { replacer } from "../core/Util";
+import { z } from "zod";
 
 const config = getServerConfigFromServer();
 
@@ -191,9 +191,9 @@ export async function readGameRecord(
       const { message, stack, name } = error;
       // Log the error for monitoring purposes
       log.info(`${gameId}: Error reading game record from R2: ${error}`, {
-        message: message,
-        stack: stack,
-        name: name,
+        message,
+        stack,
+        name,
         ...(error && typeof error === "object" ? error : {}),
       });
     }
@@ -241,24 +241,15 @@ export async function readGameRecordFallback(
       log.info(
         `${gameId}: Error reading game record from public api: ${error}`,
         {
-          message: message,
-          stack: stack,
-          name: name,
+          message,
+          stack,
+          name,
           ...(error && typeof error === "object" ? error : {}),
         },
       );
     }
-    const { message, stack, name } = error;
-    // Log the error for monitoring purposes
-    log.error(`${gameId}: Error reading game record from public api: ${error}`, {
-      message,
-      stack,
-      name,
-      ...(error && typeof error === "object" ? error : {}),
-    });
 
-    // Return null instead of throwing the error
-    return null;
+    return "Game record not found or invalid";
   }
 }
 

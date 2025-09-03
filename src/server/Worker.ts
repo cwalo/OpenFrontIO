@@ -10,7 +10,6 @@ import { archive, readGameRecord } from "./Archive";
 import express, { NextFunction, Request, Response } from "express";
 import { GameEnv } from "../core/configuration/Config";
 import { GameManager } from "./GameManager";
-import { replacer } from "../core/Util";
 import { GameType } from "../core/game/Game";
 import { ID } from "../core/BaseSchemas";
 import { PrivilegeRefresher } from "./PrivilegeRefresher";
@@ -23,6 +22,7 @@ import { logger } from "./Logger";
 import path from "path";
 import { preJoinMessageHandler } from "./worker/websocket/handler/message/PreJoinHandler";
 import rateLimit from "express-rate-limit";
+import { replacer } from "../core/Util";
 import { z } from "zod";
 
 const config = getServerConfigFromServer();
@@ -273,7 +273,7 @@ export async function startWorker() {
           JSON.stringify(
             {
               exists: true,
-              gameRecord: gameRecord,
+              gameRecord,
               success: true,
             },
             replacer,
